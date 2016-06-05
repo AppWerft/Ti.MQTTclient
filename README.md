@@ -7,7 +7,8 @@ This is a Titanium module for realizing  a mqtt client. It wrapps the [AndroidMQ
 ~~~
 var mod = require("de.appwerft.mqtt");
 var conn = mod.createMQTTClient({
-    url : "iot.eclipse.org:1883"
+    url : "iot.eclipse.org:1883",
+    id :"12345"
 })
 
 
