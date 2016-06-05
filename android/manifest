@@ -1,0 +1,18 @@
+#
+# this is your module manifest and used by Titanium
+# during compilation, packaging, distribution, etc.
+#
+version: 1.0.0
+apiversion: 2
+architectures: armeabi armeabi-v7a x86
+description: mqqt
+author: Rainer Schleevoigt
+license: Specify your license
+copyright: Copyright (c) 2016 by 
+
+# these should not be edited
+name: mqqt
+moduleid: de.appwerft.mqtt
+guid: 702c26e8-6f56-4186-98fc-6b9c194bfe16
+platform: android
+minsdk: 5.2.0.GENPERM
