@@ -14,7 +14,7 @@ import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.titanium.TiApplication;
 
 @Kroll.module(name = "Mqqt", id = "de.appwerft.mqtt")
-public class MqqtModule extends KrollModule {
+public class MqttModule extends KrollModule {
 	@Kroll.constant
 	public static final int QOS_AT_MOST_ONCE = 0;
 	@Kroll.constant
@@ -22,7 +22,7 @@ public class MqqtModule extends KrollModule {
 	@Kroll.constant
 	public static final int QOS_EXACTLY_ONCE = 2;
 
-	public MqqtModule() {
+	public MqttModule() {
 		super();
 	}
 
