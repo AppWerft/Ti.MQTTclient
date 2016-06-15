@@ -12,54 +12,22 @@ import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
 
 import org.appcelerator.titanium.TiApplication;
-import org.appcelerator.kroll.common.Log;
-import org.appcelerator.kroll.common.TiConfig;
 
+@Kroll.module(name = "Mqqt", id = "de.appwerft.mqtt")
+public class MqqtModule extends KrollModule {
+	@Kroll.constant
+	public static final int QOS_AT_MOST_ONCE = 0;
+	@Kroll.constant
+	public static final int QOS_AT_LEAST_ONCE = 1;
+	@Kroll.constant
+	public static final int QOS_EXACTLY_ONCE = 2;
 
-@Kroll.module(name="Mqqt", id="de.appwerft.mqtt")
-public class MqqtModule extends KrollModule
-{
-
-	// Standard Debugging variables
-	private static final String LCAT = "MqqtModule";
-	private static final boolean DBG = TiConfig.LOGD;
-
-	// You can define constants with @Kroll.constant, for example:
-	// @Kroll.constant public static final String EXTERNAL_NAME = value;
-
-	public MqqtModule()
-	{
+	public MqqtModule() {
 		super();
 	}
 
 	@Kroll.onAppCreate
-	public static void onAppCreate(TiApplication app)
-	{
-		Log.d(LCAT, "inside onAppCreate");
-		// put module init code that needs to run when the application is created
-	}
-
-	// Methods
-	@Kroll.method
-	public String example()
-	{
-		Log.d(LCAT, "example called");
-		return "hello world";
-	}
-
-	// Properties
-	@Kroll.getProperty
-	public String getExampleProp()
-	{
-		Log.d(LCAT, "get example property");
-		return "hello world";
-	}
-
-
-	@Kroll.setProperty
-	public void setExampleProp(String value) {
-		Log.d(LCAT, "set example property: " + value);
+	public static void onAppCreate(TiApplication app) {
 	}
 
 }
-
