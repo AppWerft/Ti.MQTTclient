@@ -14,37 +14,27 @@ import java.net.URISyntaxException;
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollProxy;
 import org.appcelerator.kroll.annotations.Kroll;
+import org.appcelerator.kroll.common.Log;
 import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.util.TiConvert;
-import org.eclipse.paho.client.mqttv3.IMqttClient;
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
-import org.eclipse.paho.client.mqttv3.MqttSecurityException;
-import org.eclipse.paho.client.mqttv3.MqttTopic;
 
 // This proxy can be created by calling Mqqt.createExample({message: "hello world"})
-@Kroll.proxy(creatableInModule = MqqtModule.class)
-public class MQTTClientProxy extends KrollProxy implements IMqttClient {
+@Kroll.proxy(creatableInModule = MqttModule.class)
+public class MQTTClientProxy extends KrollProxy {
 	// Standard Debugging variables
 	private static final String LCAT = "MQTT";
-	protected MqttAsyncClient aClient = null; // Delegate implementation to
-												// MqttAsyncClient
-	protected long timeToWait = -1; // How long each method should wait for
-									// action to complete
 
 	public URI serverUri = null;
-	private static final String SANDBOX = "mqtt://iot.eclipse.org:1883";
+	private static final String SANDBOX = "tcp://iot.eclipse.org:1883";
 	public String clientId;
+	private MqttClient aClient;
 
-	// https://github.com/eclipse/paho.mqtt.java/blob/master/org.eclipse.paho.client.mqttv3/src/main/java/org/eclipse/paho/client/mqttv3/MqttClient.java
+	// https://eclipse.org/paho/clients/java/
 	public MQTTClientProxy() {
 		super();
+
 	}
 
 	@Override
@@ -69,185 +59,15 @@ public class MQTTClientProxy extends KrollProxy implements IMqttClient {
 		super.handleCreationDict(options);
 	}
 
-	@Override
-	public void close() throws MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	@Kroll.method
-	public void connect() throws MqttSecurityException, MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void connect(MqttConnectOptions arg0) throws MqttSecurityException,
-			MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public IMqttToken connectWithResult(MqttConnectOptions arg0)
-			throws MqttSecurityException, MqttException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	@Kroll.method
-	public void disconnect() throws MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void disconnect(long arg0) throws MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void disconnectForcibly() throws MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void disconnectForcibly(long arg0) throws MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void disconnectForcibly(long arg0, long arg1) throws MqttException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	@Kroll.method
-	public String getClientId() {
-		// TODO Auto-generated method stub
-		return this.clientId;
-	}
-
-	@Override
-	public IMqttDeliveryToken[] getPendingDeliveryTokens() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	@Kroll.method
-	public String getServerURI() {
-
-		return serverUri.toString();
-	}
-
-	@Override
-	public MqttTopic getTopic(String arg0) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean isConnected() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	@Kroll.method
-	public void publish(String arg0, MqttMessage arg1) throws MqttException,
-			MqttPersistenceException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void publish(String arg0, byte[] arg1, int arg2, boolean arg3)
-			throws MqttException, MqttPersistenceException {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setCallback(MqttCallback arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	@Kroll.method
-	public void subscribe(String topicFilter) throws MqttException,
-			MqttSecurityException {
-		this.subscribe(new String[] { topicFilter }, new int[] { 1 });
-
-	}
-
-	@Override
-	@Kroll.method
-	public void subscribe(String[] topicFilters) throws MqttException {
-		int[] qos = new int[topicFilters.length];
-		for (int i = 0; i < qos.length; i++) {
-			qos[i] = 1;
-		}
-		this.subscribe(topicFilters, qos);
-
-	}
-
-	@Override
-	@Kroll.method
-	public void subscribe(String topicFilter, int qos) throws MqttException {
-		this.subscribe(new String[] { topicFilter }, new int[] { qos });
-	}
-
-	@Override
-	@Kroll.method
-	public void subscribe(String[] topicFilters, int[] qos)
-			throws MqttException {
-		IMqttToken tok = aClient.subscribe(topicFilters, qos, null, null);
-		tok.waitForCompletion(getTimeToWait());
-		int[] grantedQos = tok.getGrantedQos();
-		for (int i = 0; i < grantedQos.length; ++i) {
-			qos[i] = grantedQos[i];
-		}
-		if (grantedQos.length == 1 && qos[0] == 0x80) {
-			throw new MqttException(MqttException.REASON_CODE_SUBSCRIBE_FAILED);
+	public void connect() {
+		try {
+			aClient = new MqttClient(serverUri.toString(), clientId);
+			Log.d(LCAT, "new MqttClient created " + serverUri.toString());
+		} catch (MqttException e) {
+			e.printStackTrace();
 		}
 
-	}
-
-	@Override
-	@Kroll.method
-	public void unsubscribe(String topicFilter) throws MqttException {
-		unsubscribe(new String[] { topicFilter });
-
-	}
-
-	@Override
-	@Kroll.method
-	public void unsubscribe(String[] topicFilters) throws MqttException {
-		aClient.unsubscribe(topicFilters, null, null).waitForCompletion(
-				getTimeToWait());
-
-	}
-
-	@Kroll.method
-	public long getTimeToWait() {
-		return this.timeToWait;
-	}
-
-	@Kroll.method
-	public void setTimeToWait(long timeToWaitInMillis)
-			throws IllegalArgumentException {
-		if (timeToWaitInMillis < -1) {
-			throw new IllegalArgumentException();
-		}
-		this.timeToWait = timeToWaitInMillis;
 	}
 
 }
