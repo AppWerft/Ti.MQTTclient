@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.appcelerator.kroll.KrollDict;
+import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.KrollProxy;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
@@ -34,6 +35,7 @@ public class MQTTClientProxy extends KrollProxy {
 	private MqttClient aClient;
 	MemoryPersistence persistence = new MemoryPersistence();
 	KrollProxy proxy;
+	private KrollFunction onloadCallback = null;
 
 	// https://eclipse.org/paho/clients/java/
 	public MQTTClientProxy(KrollProxy proxy) {
@@ -77,16 +79,25 @@ public class MQTTClientProxy extends KrollProxy {
 	 */
 	@Kroll.method
 	public void subscribe(KrollDict args) throws MqttException {
+		Object onload;
 		IMqttMessageListener messageListener = new IMqttMessageListener() {
 			@Override
 			public void messageArrived(String topic, MqttMessage message)
 					throws Exception {
 				// message Arrived!
+				KrollDict payload = new KrollDict();
+				payload.put("message", message.getPayload());
 				if (proxy.hasListeners("load")) {
-					KrollDict payload = new KrollDict();
-					payload.put("message", message.getPayload());
 					proxy.fireEvent("load", payload);
 				}
+				if (args.containsKeyAndNotNull("onload")) {
+					onload = args.get("onload");
+					if (onload instanceof KrollFunction) {
+						onloadCallback = (KrollFunction) onload;
+					}
+					onloadCallback.call(getKrollObject, payload);
+				}
+
 				Log.d("LCAT",
 						"Message: " + topic + " : "
 								+ new String(message.getPayload()));

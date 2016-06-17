@@ -18,12 +18,24 @@ specification including:
 
 
 ~~~
-var mod = require("de.appwerft.mqtt");
-var conn = mod.createMQTTClient({
-    url : "iot.eclipse.org:1883",
-    id :"12345"
-})
+var MQTT = require("de.appwerft.mqtt");
+var mqttClient = MQTT.createMQTTClient({
+    clientId : "Java_Test",
+    url : "tcp://iot.eclipse.org:1883"
+});
 
-
-conn.disconnect();
+mqttClient.connect();
+mqttClient.subscribe({
+    message : "test",
+    qos : mqttClient.QOS_AT_LEAST_ONCE,
+    topicFilter : "myfilter",
+    onload : function(_e) {
+        console.log(_e);
+    }
+});
+mqttClient.publish({
+    message : "test",
+    topicFilter : "myfilter",
+    qos : mqttClient.QOS_AT_LEAST_ONCE
+});
 ~~~
