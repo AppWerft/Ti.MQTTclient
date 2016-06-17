@@ -35,15 +35,13 @@ public class MQTTClientProxy extends KrollProxy {
 	public String clientId = "Java_Test";
 	private MqttClient aClient;
 	MemoryPersistence persistence = new MemoryPersistence();
-	KrollProxy proxy;
+	MqttConnectOptions options = new MqttConnectOptions();
+
 	private KrollFunction onloadCallback = null;
 
 	// https://eclipse.org/paho/clients/java/
 	public MQTTClientProxy() {
 		super();
-		// this.proxy = proxy;
-		Log.d(LCAT, " MQTTClientProxy constructor started");
-
 	}
 
 	private void readOptions(KrollDict options) {
@@ -80,31 +78,18 @@ public class MQTTClientProxy extends KrollProxy {
 	 */
 	@Kroll.method
 	public void subscribe(final KrollDict args) throws MqttException {
-		Log.d(LCAT, "subscribe. ");
 		IMqttMessageListener messageListener = new IMqttMessageListener() {
 			@Override
 			public void messageArrived(String topic, MqttMessage message)
 					throws Exception {
-				// message Arrived!
 				Object onload;
-				Log.d(LCAT, "message arrived");
 				KrollDict payload = new KrollDict();
 				payload.put("message", message.toString());
-				Log.d(LCAT, "M=" + message.toString());
-				Log.d(LCAT, "P=" + message.getPayload().toString());
-
-				/*
-				 * if (proxy.hasListeners("load")) { proxy.fireEvent("load",
-				 * payload); }
-				 */
 				if (args.containsKeyAndNotNull("onload")) {
-					Log.d(LCAT, "message arrived and proxy contains onload");
 					onload = args.get("onload");
 					if (onload instanceof KrollFunction) {
-						Log.d(LCAT, "onload is function");
 						onloadCallback = (KrollFunction) onload;
 					}
-					Log.d(LCAT, "try to send back");
 					onloadCallback.call(getKrollObject(), payload);
 				}
 
@@ -167,7 +152,7 @@ public class MQTTClientProxy extends KrollProxy {
 		try {
 			aClient = new MqttClient(serverUri.toString(), clientId,
 					persistence);
-			MqttConnectOptions options = new MqttConnectOptions();
+
 			aClient.connect(options);
 			Log.d(LCAT, "new MqttClient created " + serverUri.toString());
 		} catch (MqttException e) {
@@ -217,7 +202,12 @@ public class MQTTClientProxy extends KrollProxy {
 
 	@Kroll.method
 	public void reconnect() throws MqttException {
-		aClient.reconnect();
+		if (aClient != null)
+			try {
+				aClient.reconnect();
+			} catch (MqttException e) {
+				e.printStackTrace();
+			}
 	}
 
 	public long getTimeToWait() {
