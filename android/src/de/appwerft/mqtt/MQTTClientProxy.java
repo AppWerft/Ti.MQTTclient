@@ -17,28 +17,34 @@ import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.util.TiConvert;
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-// This proxy can be created by calling Mqqt.createExample({message: "hello world"})
 @Kroll.proxy(creatableInModule = MqttModule.class)
 public class MQTTClientProxy extends KrollProxy {
 	// Standard Debugging variables
 	private static final String LCAT = "MQTT";
-
+	protected long timeToWait = -1;
 	public URI serverUri = null;
 	private static final String SANDBOX = "tcp://iot.eclipse.org:1883";
-	public String clientId;
+	public String clientId = "Java_Test";
 	private MqttClient aClient;
+	MemoryPersistence persistence = new MemoryPersistence();
+	KrollProxy proxy;
 
 	// https://eclipse.org/paho/clients/java/
-	public MQTTClientProxy() {
+	public MQTTClientProxy(KrollProxy proxy) {
 		super();
+		this.proxy = proxy;
+		Log.d(LCAT, " MQTTClientProxy constructor started");
 
 	}
 
-	@Override
-	public void handleCreationDict(KrollDict options) {
+	private void readOptions(KrollDict options) {
+		Log.d(LCAT, "handleCreationDict started");
 		if (options.containsKeyAndNotNull("url")) {
 			try {
 				serverUri = new URI(TiConvert.toString(options
@@ -48,6 +54,7 @@ public class MQTTClientProxy extends KrollProxy {
 			}
 		}
 		if (options.containsKeyAndNotNull("clientId")) {
+			Log.d(LCAT, "clientId detected");
 			clientId = options.getString("clientId");
 		}
 		if (serverUri == null)
@@ -56,18 +63,104 @@ public class MQTTClientProxy extends KrollProxy {
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
+	}
+
+	@Override
+	public void handleCreationDict(KrollDict options) {
+		readOptions(options);
 		super.handleCreationDict(options);
 	}
 
+	/*
+	 * JS: MQTTClient.subscribe({ topicFilter : "example", qos :
+	 * MQTTClient.QOS_AT_LEAST_ONCE, onload : function(_e) { console.log(_e)} })
+	 */
 	@Kroll.method
-	public void connect() {
-		try {
-			aClient = new MqttClient(serverUri.toString(), clientId);
-			Log.d(LCAT, "new MqttClient created " + serverUri.toString());
-		} catch (MqttException e) {
-			e.printStackTrace();
+	public void subscribe(KrollDict args) throws MqttException {
+		IMqttMessageListener messageListener = new IMqttMessageListener() {
+			@Override
+			public void messageArrived(String topic, MqttMessage message)
+					throws Exception {
+				// message Arrived!
+				if (proxy.hasListeners("load")) {
+					KrollDict payload = new KrollDict();
+					payload.put("message", message.getPayload());
+					proxy.fireEvent("load", payload);
+				}
+				Log.d("LCAT",
+						"Message: " + topic + " : "
+								+ new String(message.getPayload()));
+			}
+		};
+		if (args.containsKeyAndNotNull("topicFilters")) {
+			aClient.subscribe(args.getStringArray("topicFilter"),
+					new int[] { 1 });
+		}
+		if (args.containsKeyAndNotNull("topicFilter")) {
+			aClient.subscribe(new String[] { args.getString("topicFilter") },
+					new int[] { 1 },
+					new IMqttMessageListener[] { messageListener });
+		}
+	}
+
+	@Kroll.method
+	public void unsubscribe(KrollDict args) throws MqttException {
+		if (args.containsKeyAndNotNull("topicFilter")) {
+			String topicFilter = args.getString("topicFilter");
+			aClient.unsubscribe(new String[] { topicFilter });
+		}
+		if (args.containsKeyAndNotNull("topicFilters")) {
+			String[] topicFilters = args.getStringArray("topicFilters");
+			aClient.unsubscribe(topicFilters);
 		}
 
 	}
 
+	@Kroll.method
+	public void publish(KrollDict args) {
+		String topic = "DEFAULTTOPIC", content = "DEFAULTMAESSAGE";
+		int qos = 2;
+		if (args.containsKeyAndNotNull("topic")) {
+			topic = args.getString("topic");
+		}
+		if (args.containsKeyAndNotNull("message")) {
+			content = args.getString("message");
+		}
+		if (args.containsKeyAndNotNull("qos")) {
+			qos = args.getInt("qos");
+		}
+		MqttMessage message = new MqttMessage(content.getBytes());
+		message.setQos(qos);
+		try {
+			aClient.publish(topic, message);
+		} catch (MqttException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Kroll.method
+	public void connect() {
+		Log.d(LCAT, "connect to " + clientId + "@" + serverUri.toString());
+		try {
+			aClient = new MqttClient(serverUri.toString(), clientId,
+					persistence);
+			Log.d(LCAT, "new MqttClient created " + serverUri.toString());
+		} catch (MqttException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Kroll.method
+	public void disconnect() {
+		if (aClient != null)
+			try {
+				aClient.disconnect();
+			} catch (MqttException e) {
+				e.printStackTrace();
+			}
+	}
+
+	public long getTimeToWait() {
+		return this.timeToWait;
+	}
 }
