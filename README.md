@@ -26,7 +26,6 @@ var mqttClient = MQTT.createMQTTClient({
 
 mqttClient.connect();
 mqttClient.subscribe({
-    message : "test",
     qos : mqttClient.QOS_AT_LEAST_ONCE,
     topicFilter : "myfilter",
     onload : function(_e) {
