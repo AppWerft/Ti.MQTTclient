@@ -38,9 +38,9 @@ public class MQTTClientProxy extends KrollProxy {
 	private KrollFunction onloadCallback = null;
 
 	// https://eclipse.org/paho/clients/java/
-	public MQTTClientProxy(KrollProxy proxy) {
+	public MQTTClientProxy() {
 		super();
-		this.proxy = proxy;
+		// this.proxy = proxy;
 		Log.d(LCAT, " MQTTClientProxy constructor started");
 
 	}
@@ -78,24 +78,26 @@ public class MQTTClientProxy extends KrollProxy {
 	 * MQTTClient.QOS_AT_LEAST_ONCE, onload : function(_e) { console.log(_e)} })
 	 */
 	@Kroll.method
-	public void subscribe(KrollDict args) throws MqttException {
-		Object onload;
+	public void subscribe(final KrollDict args) throws MqttException {
+		Log.d(LCAT, "subscribe. ");
 		IMqttMessageListener messageListener = new IMqttMessageListener() {
 			@Override
 			public void messageArrived(String topic, MqttMessage message)
 					throws Exception {
 				// message Arrived!
+				Object onload;
 				KrollDict payload = new KrollDict();
 				payload.put("message", message.getPayload());
-				if (proxy.hasListeners("load")) {
-					proxy.fireEvent("load", payload);
-				}
+				/*
+				 * if (proxy.hasListeners("load")) { proxy.fireEvent("load",
+				 * payload); }
+				 */
 				if (args.containsKeyAndNotNull("onload")) {
 					onload = args.get("onload");
 					if (onload instanceof KrollFunction) {
 						onloadCallback = (KrollFunction) onload;
 					}
-					onloadCallback.call(getKrollObject, payload);
+					onloadCallback.call(getKrollObject(), payload);
 				}
 
 				Log.d("LCAT",
