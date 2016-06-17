@@ -17,7 +17,7 @@ specification including:
 * disconnect
 
 
-~~~
+```javascript
 var MQTT = require("de.appwerft.mqtt");
 var mqttClient = MQTT.createMQTTClient({
     clientId : "Java_Test",
@@ -37,4 +37,4 @@ mqttClient.publish({
     topicFilter : "myfilter",
     qos : mqttClient.QOS_AT_LEAST_ONCE
 });
-~~~
+```
