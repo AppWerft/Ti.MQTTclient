@@ -29,13 +29,14 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 public class MQTTClientProxy extends KrollProxy {
 	// Standard Debugging variables
 	private static final String LCAT = "MQTT";
+
 	protected long timeToWait = -1;
-	public URI serverUri = null;
+	private URI serverUri = null;
 	private static final String SANDBOX = "tcp://iot.eclipse.org:1883";
-	public String clientId = "Java_Test";
+	private String clientId = "Java_Test";
 	private MqttClient aClient;
 	MemoryPersistence persistence = new MemoryPersistence();
-	MqttConnectOptions options = new MqttConnectOptions();
+	MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
 
 	private KrollFunction onloadCallback = null;
 
@@ -45,7 +46,6 @@ public class MQTTClientProxy extends KrollProxy {
 	}
 
 	private void readOptions(KrollDict options) {
-		Log.d(LCAT, "handleCreationDict started");
 		if (options.containsKeyAndNotNull("url")) {
 			try {
 				serverUri = new URI(TiConvert.toString(options
@@ -55,7 +55,6 @@ public class MQTTClientProxy extends KrollProxy {
 			}
 		}
 		if (options.containsKeyAndNotNull("clientId")) {
-			Log.d(LCAT, "clientId detected");
 			clientId = options.getString("clientId");
 		}
 		if (serverUri == null)
@@ -72,10 +71,6 @@ public class MQTTClientProxy extends KrollProxy {
 		super.handleCreationDict(options);
 	}
 
-	/*
-	 * JS: MQTTClient.subscribe({ topicFilter : "example", qos :
-	 * MQTTClient.QOS_AT_LEAST_ONCE, onload : function(_e) { console.log(_e)} })
-	 */
 	@Kroll.method
 	public void subscribe(final KrollDict args) throws MqttException {
 		IMqttMessageListener messageListener = new IMqttMessageListener() {
@@ -144,17 +139,14 @@ public class MQTTClientProxy extends KrollProxy {
 	}
 
 	@Kroll.method
-	public void connect(@Kroll.argument(optional = true) final KrollDict args) {
+	public void connect(@Kroll.argument(optional = true) KrollDict args) {
 		if (args != null && !args.isEmpty()) {
 			readOptions(args);
 		}
-		Log.d(LCAT, "connect to " + clientId + "@" + serverUri.toString());
 		try {
 			aClient = new MqttClient(serverUri.toString(), clientId,
 					persistence);
-
-			aClient.connect(options);
-			Log.d(LCAT, "new MqttClient created " + serverUri.toString());
+			aClient.connect(mqttConnectOptions);
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
