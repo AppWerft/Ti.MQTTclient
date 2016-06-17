@@ -20,6 +20,7 @@ import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.util.TiConvert;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
@@ -86,17 +87,24 @@ public class MQTTClientProxy extends KrollProxy {
 					throws Exception {
 				// message Arrived!
 				Object onload;
+				Log.d(LCAT, "message arrived");
 				KrollDict payload = new KrollDict();
-				payload.put("message", message.getPayload());
+				payload.put("message", message.toString());
+				Log.d(LCAT, "M=" + message.toString());
+				Log.d(LCAT, "P=" + message.getPayload().toString());
+
 				/*
 				 * if (proxy.hasListeners("load")) { proxy.fireEvent("load",
 				 * payload); }
 				 */
 				if (args.containsKeyAndNotNull("onload")) {
+					Log.d(LCAT, "message arrived and proxy contains onload");
 					onload = args.get("onload");
 					if (onload instanceof KrollFunction) {
+						Log.d(LCAT, "onload is function");
 						onloadCallback = (KrollFunction) onload;
 					}
+					Log.d(LCAT, "try to send back");
 					onloadCallback.call(getKrollObject(), payload);
 				}
 
@@ -105,12 +113,11 @@ public class MQTTClientProxy extends KrollProxy {
 								+ new String(message.getPayload()));
 			}
 		};
-		if (args.containsKeyAndNotNull("topicFilters")) {
-			aClient.subscribe(args.getStringArray("topicFilter"),
-					new int[] { 1 });
+		if (args.containsKeyAndNotNull("topics")) {
+			aClient.subscribe(args.getStringArray("topics"), new int[] { 1 });
 		}
-		if (args.containsKeyAndNotNull("topicFilter")) {
-			aClient.subscribe(new String[] { args.getString("topicFilter") },
+		if (args.containsKeyAndNotNull("topic")) {
+			aClient.subscribe(new String[] { args.getString("topic") },
 					new int[] { 1 },
 					new IMqttMessageListener[] { messageListener });
 		}
@@ -118,12 +125,12 @@ public class MQTTClientProxy extends KrollProxy {
 
 	@Kroll.method
 	public void unsubscribe(KrollDict args) throws MqttException {
-		if (args.containsKeyAndNotNull("topicFilter")) {
-			String topicFilter = args.getString("topicFilter");
+		if (args.containsKeyAndNotNull("topic")) {
+			String topicFilter = args.getString("topic");
 			aClient.unsubscribe(new String[] { topicFilter });
 		}
-		if (args.containsKeyAndNotNull("topicFilters")) {
-			String[] topicFilters = args.getStringArray("topicFilters");
+		if (args.containsKeyAndNotNull("topics")) {
+			String[] topicFilters = args.getStringArray("topics");
 			aClient.unsubscribe(topicFilters);
 		}
 
@@ -131,7 +138,7 @@ public class MQTTClientProxy extends KrollProxy {
 
 	@Kroll.method
 	public void publish(KrollDict args) {
-		String topic = "DEFAULTTOPIC", content = "DEFAULTMAESSAGE";
+		String topic = "DEFAULTTOPIC", content = "DEFAULTMESSAGE";
 		int qos = 2;
 		if (args.containsKeyAndNotNull("topic")) {
 			topic = args.getString("topic");
@@ -152,15 +159,45 @@ public class MQTTClientProxy extends KrollProxy {
 	}
 
 	@Kroll.method
-	public void connect() {
+	public void connect(@Kroll.argument(optional = true) final KrollDict args) {
+		if (args != null && !args.isEmpty()) {
+			readOptions(args);
+		}
 		Log.d(LCAT, "connect to " + clientId + "@" + serverUri.toString());
 		try {
 			aClient = new MqttClient(serverUri.toString(), clientId,
 					persistence);
+			MqttConnectOptions options = new MqttConnectOptions();
+			aClient.connect(options);
 			Log.d(LCAT, "new MqttClient created " + serverUri.toString());
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Kroll.method
+	public void close() throws MqttException {
+		aClient.close();
+	}
+
+	@Kroll.method
+	public String getClientId() {
+		return aClient.getClientId();
+	}
+
+	@Kroll.method
+	public String getServerURI() {
+		return aClient.getServerURI().toString();
+	}
+
+	@Kroll.method
+	public String getCurrentServerURI() {
+		return aClient.getCurrentServerURI().toString();
+	}
+
+	@Kroll.method
+	public String getTopic(String topic) {
+		return aClient.getTopic(topic).toString();
 	}
 
 	@Kroll.method
@@ -171,6 +208,16 @@ public class MQTTClientProxy extends KrollProxy {
 			} catch (MqttException e) {
 				e.printStackTrace();
 			}
+	}
+
+	@Kroll.method
+	public boolean isConnected() {
+		return aClient.isConnected();
+	}
+
+	@Kroll.method
+	public void reconnect() throws MqttException {
+		aClient.reconnect();
 	}
 
 	public long getTimeToWait() {

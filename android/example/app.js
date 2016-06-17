@@ -1,39 +1,39 @@
-// This is a test harness for your module
-// You should do something interesting in this harness
-// to test out the module and to provide instructions
-// to users on how to use it by example.
-
-
-// open a single window
-var win = Ti.UI.createWindow({
-	backgroundColor:'white'
-});
-var label = Ti.UI.createLabel();
-win.add(label);
-win.open();
-
-// TODO: write your module tests here
-var mqqt = require('de.appwerft.mqtt');
-Ti.API.info("module is => " + mqqt);
-
-label.text = mqqt.example();
-
-Ti.API.info("module exampleProp is => " + mqqt.exampleProp);
-mqqt.exampleProp = "This is a test value";
-
-if (Ti.Platform.name == "android") {
-	var proxy = mqqt.createExample({
-		message: "Creating an example Proxy",
-		backgroundColor: "red",
-		width: 100,
-		height: 100,
-		top: 100,
-		left: 150
+! function() {
+	var $ = Titanium.UI.createWindow({
+		title : 'MQTT  Test',
+		backgroundImage : '/karo.png'
+	});
+	var button = Ti.UI.createButton({
+		height : 80,
+		width : '80%',
+		title : 'Send model name'
 	});
 
-	proxy.printMessage("Hello world!");
-	proxy.message = "Hi world!.  It's me again.";
-	proxy.printMessage("Hello world!");
-	win.add(proxy);
-}
+	var MQTT = require("de.appwerft.mqtt");
+	var mqttClient = MQTT.createMQTTClient();
 
+	mqttClient.connect({
+		clientId : "Java_Test",
+		url : "tcp://iot.eclipse.org:1883"
+	});
+
+	setTimeout(function() {
+		mqttClient.subscribe({
+			topic : "info",
+			qos : mqttClient.QOS_AT_LEAST_ONCE,
+			onload : function(_payload) {
+				Ti.UI.createNotification(_payload).show();
+			}
+		});
+
+	}, 100);
+	$.add(button);
+	button.addEventListener('click', function() {
+		mqttClient.publish({
+			message : Ti.Platform.model + ' with ' + Ti.Platform.availableMemory,
+			topic : "info",
+			qos : mqttClient.QOS_AT_LEAST_ONCE
+		});
+	});
+	$.open();
+}();
