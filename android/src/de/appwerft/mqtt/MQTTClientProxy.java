@@ -31,8 +31,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 @Kroll.proxy(creatableInModule = MqttModule.class)
 public class MQTTClientProxy extends KrollProxy {
 	// Standard Debugging variables
-	private static final String LCAT = "MQTT";
-
+	static final String LCAT = "MQTT";
 	protected long timeToWait = -1;
 	private URI serverUri = null;
 	private static final String SANDBOX = "tcp://broker.hivemq.com:1883";
@@ -48,7 +47,8 @@ public class MQTTClientProxy extends KrollProxy {
 		super();
 	}
 
-	private void readOptions(KrollDict options) {
+	@Override
+	public void handleCreationDict(KrollDict options) {
 		final TiProperties appProperties;
 		appProperties = TiApplication.getInstance().getAppProperties();
 		String uriString = appProperties.getString("mqtt_broker", "");
@@ -78,11 +78,6 @@ public class MQTTClientProxy extends KrollProxy {
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
-	}
-
-	@Override
-	public void handleCreationDict(KrollDict options) {
-		readOptions(options);
 		super.handleCreationDict(options);
 	}
 
@@ -110,7 +105,8 @@ public class MQTTClientProxy extends KrollProxy {
 			aClient.subscribe(new String[] { args.getString("topic") },
 					new int[] { 1 },
 					new IMqttMessageListener[] { messageListener });
-		}
+		} else
+			Log.d(LCAT, "Warning: no topic givens");
 	}
 
 	@Kroll.method
