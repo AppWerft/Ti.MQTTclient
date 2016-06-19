@@ -104,16 +104,8 @@ public class MQTTClientProxy extends KrollProxy {
 					}
 					onloadCallback.call(getKrollObject(), payload);
 				}
-
-				Log.d("LCAT",
-						"Message: " + topic + " : "
-								+ new String(message.getPayload()));
 			}
 		};
-		if (args.containsKeyAndNotNull("topics")) {
-			aClient.subscribe(args.getStringArray("topics"), new int[] { 1 },
-					new IMqttMessageListener[] { messageListener });
-		}
 		if (args.containsKeyAndNotNull("topic")) {
 			aClient.subscribe(new String[] { args.getString("topic") },
 					new int[] { 1 },
