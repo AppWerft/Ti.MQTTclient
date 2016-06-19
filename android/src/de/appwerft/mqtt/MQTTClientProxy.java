@@ -16,9 +16,12 @@ import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.KrollProxy;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
+import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.TiC;
+import org.appcelerator.titanium.TiProperties;
 import org.appcelerator.titanium.util.TiConvert;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -32,7 +35,7 @@ public class MQTTClientProxy extends KrollProxy {
 
 	protected long timeToWait = -1;
 	private URI serverUri = null;
-	private static final String SANDBOX = "tcp://iot.eclipse.org:1883";
+	private static final String SANDBOX = "tcp://broker.hivemq.com:1883";
 	private String clientId = "Java_Test";
 	private MqttClient aClient;
 	MemoryPersistence persistence = new MemoryPersistence();
@@ -46,6 +49,18 @@ public class MQTTClientProxy extends KrollProxy {
 	}
 
 	private void readOptions(KrollDict options) {
+		final TiProperties appProperties;
+		appProperties = TiApplication.getInstance().getAppProperties();
+		String uriString = appProperties.getString("mqtt_broker", "");
+
+		if (uriString.equals("")) {
+			uriString = SANDBOX;
+		}
+		try {
+			serverUri = new URI(TiConvert.toString(uriString));
+		} catch (URISyntaxException e1) {
+			e1.printStackTrace();
+		}
 		if (options.containsKeyAndNotNull("url")) {
 			try {
 				serverUri = new URI(TiConvert.toString(options
@@ -79,6 +94,7 @@ public class MQTTClientProxy extends KrollProxy {
 					throws Exception {
 				Object onload;
 				KrollDict payload = new KrollDict();
+				Log.d(LCAT, " message received");
 				payload.put("message", message.toString());
 				if (args.containsKeyAndNotNull("onload")) {
 					onload = args.get("onload");
@@ -120,6 +136,7 @@ public class MQTTClientProxy extends KrollProxy {
 	public void publish(KrollDict args) {
 		String topic = "DEFAULTTOPIC", content = "DEFAULTMESSAGE";
 		int qos = 2;
+		boolean retained = false;
 		if (args.containsKeyAndNotNull("topic")) {
 			topic = args.getString("topic");
 		}
@@ -129,8 +146,13 @@ public class MQTTClientProxy extends KrollProxy {
 		if (args.containsKeyAndNotNull("qos")) {
 			qos = args.getInt("qos");
 		}
+		if (args.containsKeyAndNotNull("retained")) {
+			retained = args.getBoolean("retained");
+		}
 		MqttMessage message = new MqttMessage(content.getBytes());
 		message.setQos(qos);
+		message.setRetained(retained);
+		Log.d(LCAT, "Try to publish message");
 		try {
 			aClient.publish(topic, message);
 		} catch (MqttException e) {
@@ -140,8 +162,32 @@ public class MQTTClientProxy extends KrollProxy {
 
 	@Kroll.method
 	public void connect(@Kroll.argument(optional = true) KrollDict args) {
+		mqttConnectOptions.setAutomaticReconnect(true);
 		if (args != null && !args.isEmpty()) {
-			readOptions(args);
+			if (args.containsKeyAndNotNull("cleanSession")) {
+				mqttConnectOptions.setCleanSession(args
+						.getBoolean("cleanSession"));
+			}
+			if (args.containsKeyAndNotNull("automaticReconnect")) {
+				mqttConnectOptions.setAutomaticReconnect(args
+						.getBoolean("automaticReconnect"));
+			}
+			if (args.containsKeyAndNotNull("connectionTimeout")) {
+				mqttConnectOptions.setConnectionTimeout(args
+						.getInt("connectionTimeout"));
+			}
+			if (args.containsKeyAndNotNull("keepAliveInterval")) {
+				mqttConnectOptions.setKeepAliveInterval(args
+						.getInt("keepAliveInterval"));
+			}
+			if (args.containsKeyAndNotNull("userName")) {
+				mqttConnectOptions.setUserName(args.getString("userName")); // setUserName();
+			}
+			if (args.containsKeyAndNotNull("password")) {
+				mqttConnectOptions.setPassword(args.getString("password")
+						.toCharArray());
+			}
+
 		}
 		try {
 			aClient = new MqttClient(serverUri.toString(), clientId,
@@ -200,6 +246,11 @@ public class MQTTClientProxy extends KrollProxy {
 			} catch (MqttException e) {
 				e.printStackTrace();
 			}
+	}
+
+	@Kroll.method
+	public static String generateClientId() {
+		return MqttAsyncClient.generateClientId();
 	}
 
 	public long getTimeToWait() {
