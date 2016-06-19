@@ -39,11 +39,9 @@ public class MQTTClientProxy extends KrollProxy {
 	private MqttClient aClient;
 	MemoryPersistence persistence = new MemoryPersistence();
 	MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
-
 	private KrollFunction onloadCallback = null;
 
-	// https://eclipse.org/paho/clients/java/
-	public MQTTClientProxy() {
+	public MQTTClientProxy() { // https://eclipse.org/paho/clients/java/
 		super();
 	}
 
@@ -52,7 +50,6 @@ public class MQTTClientProxy extends KrollProxy {
 		final TiProperties appProperties;
 		appProperties = TiApplication.getInstance().getAppProperties();
 		String uriString = appProperties.getString("mqtt_broker", "");
-
 		if (uriString.equals("")) {
 			uriString = SANDBOX;
 		}
@@ -106,7 +103,7 @@ public class MQTTClientProxy extends KrollProxy {
 					new int[] { 1 },
 					new IMqttMessageListener[] { messageListener });
 		} else
-			Log.d(LCAT, "Warning: no topic givens");
+			Log.d(LCAT, "Warning: no topic given");
 	}
 
 	@Kroll.method
