@@ -88,13 +88,14 @@ public class MQTTClientProxy extends KrollProxy {
 
 	@Kroll.method
 	public void subscribe(final KrollDict args) throws MqttException {
+		/* implementation of "callback" */
 		IMqttMessageListener messageListener = new IMqttMessageListener() {
 			@Override
 			public void messageArrived(String topic, MqttMessage message)
 					throws Exception {
 				Object onload;
 				KrollDict payload = new KrollDict();
-				Log.d(LCAT, " message received");
+				Log.d(LCAT, " message from broker received");
 				payload.put("message", message.toString());
 				if (args.containsKeyAndNotNull("onload")) {
 					onload = args.get("onload");
@@ -110,7 +111,8 @@ public class MQTTClientProxy extends KrollProxy {
 			}
 		};
 		if (args.containsKeyAndNotNull("topics")) {
-			aClient.subscribe(args.getStringArray("topics"), new int[] { 1 });
+			aClient.subscribe(args.getStringArray("topics"), new int[] { 1 },
+					new IMqttMessageListener[] { messageListener });
 		}
 		if (args.containsKeyAndNotNull("topic")) {
 			aClient.subscribe(new String[] { args.getString("topic") },
